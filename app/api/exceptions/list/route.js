@@ -7,7 +7,6 @@ export async function GET(request) {
   try {
     const authorization = request.headers.get("authorization");
     const token = authorization?.split(" ")[1];
-
     const authResult = await verifyFirebaseToken(token);
 
     if (!authResult.valid) {
@@ -21,7 +20,6 @@ export async function GET(request) {
     }
 
     const decodedToken = authResult.decodedToken;
-
     const profile = await getUserProfile(decodedToken.uid);
 
     if (!profile) {
@@ -31,17 +29,11 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
 
     // Pagination
-    const page = Math.max(
-      1,
-      parseInt(searchParams.get("page") || "1", 10)
-    );
-
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(
       100,
       Math.max(1, parseInt(searchParams.get("limit") || "10", 10))
     );
-
-    const skip = (page - 1) * limit;
 
     // Search
     const search = searchParams.get("search") || "";
@@ -55,6 +47,7 @@ export async function GET(request) {
       return jsonError("Page and limit must be greater than 0", 400);
     }
 
+    // FIX: Removed duplicate `const skip` declaration — only declared once here
     const skip = (page - 1) * limit;
 
     const db = await connectDb();
@@ -103,16 +96,19 @@ export async function GET(request) {
 
     const totalPages = Math.ceil(total / limit);
 
-    return jsonSuccess({
-      exceptions,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages,
-        hasNextPage: page < totalPages,
+    // FIX: Moved 200 outside the object — it's the second argument to jsonSuccess, not a property
+    return jsonSuccess(
+      {
+        exceptions,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages,
+          hasNextPage: page < totalPages,
+        },
       },
-      200,
+      200
     );
   } catch (error) {
     return jsonError("Internal server error", 500);
